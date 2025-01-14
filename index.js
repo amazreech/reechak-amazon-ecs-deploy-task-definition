@@ -33,6 +33,8 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
   const assignPublicIP = core.getInput('run-task-assign-public-IP', { required: false }) || 'DISABLED';
   const tags = JSON.parse(core.getInput('run-task-tags', { required: false }) || '[]');
   const capacityProviderStrategy = JSON.parse(core.getInput('run-task-capacity-provider-strategy', { required: false }) || '[]');
+  const runTaskManagedEBSVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
+  const runTaskManagedEBSVolume = core.getInput('service-managed-ebs-volume', { required: false }) || '{}';
 
   let awsvpcConfiguration = {}
 
@@ -48,6 +50,17 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
     awsvpcConfiguration["assignPublicIp"] = assignPublicIP
   }
 
+  let volumeConfiguration = {}
+
+  if (runTaskManagedEBSVolumeName != '') {
+    if (runTaskManagedEBSVolume != '{}') {
+      taskManagedEBSVolumeObject = convertToManagedEbsVolumeObject(runTaskManagedEbsVolume);
+      volumeConfiguration[runTaskManagedEbsVolumeName] = taskManagedEbsVolumeObject;
+    } else {
+      core.warning(`managed-ebs-volume-name provided without managed-ebs-volume value. Ignoring managed-ebs-volume property`);
+    }
+  }
+
   const runTaskResponse = await ecs.runTask({
     startedBy: startedBy,
     cluster: clusterName,
@@ -59,7 +72,8 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
     launchType: capacityProviderStrategy.length === 0 ? launchType : null,
     networkConfiguration: Object.keys(awsvpcConfiguration).length === 0 ? null : { awsvpcConfiguration: awsvpcConfiguration },
     enableECSManagedTags: enableECSManagedTags,
-    tags: tags
+    tags: tags,
+    volumeConfiguration: volumeConfiguration
   });
 
   core.debug(`Run task response ${JSON.stringify(runTaskResponse)}`)
@@ -84,6 +98,45 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
   } else {
     core.debug('Not waiting for the task to stop');
   }
+}
+
+async function convertToManagedEbsVolumeObject(managedEbsVolume) {
+  managedEbsVolumeObject = {}
+
+  if (exists('roleArn' in managedEbsVolume)){ // required property
+    managedEbsVolumeObject['roleArn'] = managedEbsVolume['roleArn'];
+  } else {
+    throw new Error('managed-ebs-volume must provide "role-arn" to associate with the EBS volume')
+  }
+
+  if (exists('encrypted' in managedEbsVolume)) {
+    managedEbsVolumeObject['encrypted'] = managedEbsVolume['encrypted'];
+  }
+  if (exists('filesystemType' in managedEbsVolume)) {
+    managedEbsVolumeObject['filesystemType'] = managedEbsVolume['filesystemType'];
+  }
+  if (exists('iops' in managedEbsVolume)) {
+    managedEbsVolumeObject['iops'] = managedEbsVolume['iops'];
+  }
+  if (exists('kmsKeyId' in managedEbsVolume)) {
+    managedEbsVolumeObject['kmsKeyId'] = managedEbsVolume['kmsKeyId'];
+  }
+  if (exists('sizeInGiB' in managedEbsVolume)) {
+    managedEbsVolumeObject['sizeInGiB'] = managedEbsVolume['sizeInGiB'];
+  }
+  if (exists('snapshotId' in managedEbsVolume)) {
+    managedEbsVolumeObject['snapshotId'] = managedEbsVolume['snapshotId'];
+  }
+  if (exists('tagSpecifications' in managedEbsVolume)) {
+    managedEbsVolumeObject['tagSpecifications'] = managedEbsVolume['tagSpecifications'];
+  }
+  if (exists('throughput' in managedEbsVolume) && ((exists('sizeInGiB') in managedEbsVolume) && (managedEbsVolume['sizeInGiB'] == 'gp3'))){
+    managedEbsVolumeObject["throughput"] = managedEbsVolume['throughput'];
+  }
+  if (exists('volumeType') in managedEbsVolume) {
+    managedEbsVolumeObject['volumeType'] = managedEbsVolume['volumeType'];
+  }
+  return managedEbsVolumeObject;
 }
 
 // Poll tasks until they enter a stopped state
@@ -136,13 +189,28 @@ async function tasksExitCode(ecs, clusterName, taskArns) {
 async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags) {
   core.debug('Updating the service');
 
+  const serviceManagedEbsVolumeName = core.getInput('managed-ebs-volume-name', { required: false }) || '';
+  const serviceManagedEbsVolume = JSON.parse(core.getInput('managed-ebs-volume', { required: false }) || '{}');
+
+  let volumeConfiguration = {};
+
+  if (serviceManagedEbsVolumeName != '') {
+    if (serviceManagedEbsVolume != '{}') {
+      serviceManagedEbsVolumeObject = convertToManagedEbsVolumeObject(serviceManagedEbsVolume);
+      volumeConfiguration[serviceManagedEbsVolumeName] = serviceManagedEbsVolumeObject;
+    } else {
+      core.warning(`managed-ebs-volume-name provided without managed-ebs-volume value. Ignoring managed-ebs-volume property`);
+    }
+  }
+
   let params = {
     cluster: clusterName,
     service: service,
     taskDefinition: taskDefArn,
     forceNewDeployment: forceNewDeployment,
     enableECSManagedTags: enableECSManagedTags,
-    propagateTags: propagateTags
+    propagateTags: propagateTags,
+    volumeConfiguration: volumeConfiguration
   };
 
   // Add the desiredCount property only if it is defined and a number.
