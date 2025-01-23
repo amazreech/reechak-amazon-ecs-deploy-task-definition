@@ -105,6 +105,7 @@ async function convertToManagedEbsVolumeObject(managedEbsVolume) {
 
   if (exists('roleArn' in managedEbsVolume)){ // required property
     managedEbsVolumeObject['roleArn'] = managedEbsVolume['roleArn'];
+    core.info(`Found RoleArn ${managedEbsVolume['roleArn']}`);
   } else {
     throw new Error('managed-ebs-volume must provide "role-arn" to associate with the EBS volume')
   }
@@ -198,6 +199,7 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
     if (serviceManagedEbsVolume != '{}') {
       serviceManagedEbsVolumeObject = convertToManagedEbsVolumeObject(serviceManagedEbsVolume);
       volumeConfiguration[serviceManagedEbsVolumeName] = serviceManagedEbsVolumeObject;
+      core.info(`Assigning VolumeConfiguration Object`);
     } else {
       core.warning(`managed-ebs-volume-name provided without managed-ebs-volume value. Ignoring managed-ebs-volume property`);
     }
