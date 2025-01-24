@@ -59,6 +59,8 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
     } else {
       core.warning(`run-task-managed-ebs-volume-name provided without run-task-managed-ebs-volume value. Ignoring run-task-managed-ebs-volume property`);
     }
+  } else {
+    core.info(`No VolumeConfiguration Property provided for run-task-managed-ebs-volume`);
   }
 
   const runTaskResponse = await ecs.runTask({
@@ -188,7 +190,7 @@ async function tasksExitCode(ecs, clusterName, taskArns) {
 
 // Deploy to a service that uses the 'ECS' deployment controller
 async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags) {
-  core.debug('Updating the service');
+  core.info('Updating the service');
 
   const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
   const serviceManagedEbsVolume = JSON.parse(core.getInput('service-managed-ebs-volume', { required: false }) || '{}');
@@ -196,6 +198,7 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
   let volumeConfiguration = {};
 
   if (serviceManagedEbsVolumeName != '') {
+    core.info(`Assigning VolumeConfiguration Name: ${serviceManagedEbsVolumeName}`);
     if (serviceManagedEbsVolume != '{}') {
       serviceManagedEbsVolumeObject = convertToManagedEbsVolumeObject(serviceManagedEbsVolume);
       volumeConfiguration[serviceManagedEbsVolumeName] = serviceManagedEbsVolumeObject;
@@ -203,6 +206,8 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
     } else {
       core.warning(`service-managed-ebs-volume-name provided without service-managed-ebs-volume value. Ignoring service-managed-ebs-volume property`);
     }
+  }  else {
+    core.info(`No VolumeConfiguration Property provided for service-managed-ebs-volume`);
   }
 
   let params = {
@@ -476,7 +481,7 @@ async function run() {
     const propagateTags = core.getInput('propagate-tags', { required: false }) || 'NONE';
 
     // Register the task definition
-    core.debug('Registering the task definition');
+    core.info('Registering the task definition');
     const taskDefPath = path.isAbsolute(taskDefinitionFile) ?
       taskDefinitionFile :
       path.join(process.env.GITHUB_WORKSPACE, taskDefinitionFile);
@@ -487,8 +492,8 @@ async function run() {
       registerResponse = await ecs.registerTaskDefinition(taskDefContents);
     } catch (error) {
       core.setFailed("Failed to register task definition in ECS: " + error.message);
-      core.debug("Task definition contents:");
-      core.debug(JSON.stringify(taskDefContents, undefined, 4));
+      core.info("Task definition contents:");
+      core.info(JSON.stringify(taskDefContents, undefined, 4));
       throw(error);
     }
     const taskDefArn = registerResponse.taskDefinition.taskDefinitionArn;
@@ -498,9 +503,9 @@ async function run() {
     const clusterName = cluster ? cluster : 'default';
     const shouldRunTaskInput = core.getInput('run-task', { required: false }) || 'false';
     const shouldRunTask = shouldRunTaskInput.toLowerCase() === 'true';
-    core.debug(`shouldRunTask: ${shouldRunTask}`);
+    core.info(`shouldRunTask: ${shouldRunTask}`);
     if (shouldRunTask) {
-      core.debug("Running ad-hoc task...");
+      core.info("Running ad-hoc task...");
       await runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSManagedTags);
     }
 
@@ -524,23 +529,23 @@ async function run() {
 
       if (!serviceResponse.deploymentController || !serviceResponse.deploymentController.type || serviceResponse.deploymentController.type === 'ECS') {
         // Service uses the 'ECS' deployment controller, so we can call UpdateService
-        core.debug('Updating service...');
+        core.info('Updating service...');
         await updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags);
 
       } else if (serviceResponse.deploymentController.type === 'CODE_DEPLOY') {
         // Service uses CodeDeploy, so we should start a CodeDeploy deployment
-        core.debug('Deploying service in the default cluster');
+        core.info('Deploying service in the default cluster');
         await createCodeDeployDeployment(codedeploy, clusterName, service, taskDefArn, waitForService, waitForMinutes);
       } else {
         throw new Error(`Unsupported deployment controller: ${serviceResponse.deploymentController.type}`);
       }
     } else {
-      core.debug('Service was not specified, no service updated');
+      core.info('Service was not specified, no service updated');
     }
   }
   catch (error) {
     core.setFailed(error.message);
-    core.debug(error.stack);
+    core.info(error.stack);
   }
 }
 
