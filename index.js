@@ -193,25 +193,31 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
   core.debug('Updating the service');
 
   const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
-  core.debug(`serviceManagedEbsVolume Name: ${serviceManagedEbsVolumeName}`);
+  core.debug('serviceManagedEbsVolume Name: ${serviceManagedEbsVolumeName}');
+  core.debug('serviceManagedEbsVolume Name.');
   const serviceManagedEbsVolume = JSON.parse(core.getInput('service-managed-ebs-volume', { required: false }) || '{}');
-  core.debug(`serviceManagedEbsVolume Value: ${serviceManagedEbsVolume}`);
+  core.debug('serviceManagedEbsVolume Value: ${serviceManagedEbsVolume}');
+  core.debug('serviceManagedEbsVolume Value.');
+
+  core.debug('Updating the service contd..');
 
   let volumeConfiguration = {};
 
   if (serviceManagedEbsVolumeName != '') {
     core.debug(`Assigning VolumeConfiguration Name: ${serviceManagedEbsVolumeName}`);
+    core.debug('Assigning VolumeConfiguration.');
     if (serviceManagedEbsVolume != '{}') {
       serviceManagedEbsVolumeObject = convertToManagedEbsVolumeObject(serviceManagedEbsVolume);
       volumeConfiguration[serviceManagedEbsVolumeName] = serviceManagedEbsVolumeObject;
-      core.debug(`Assigning VolumeConfiguration Object`);
+      core.debug('Assigning VolumeConfiguration Object');
     } else {
-      core.warning(`service-managed-ebs-volume-name provided without service-managed-ebs-volume value. Ignoring service-managed-ebs-volume property`);
+      core.warning('service-managed-ebs-volume-name provided without service-managed-ebs-volume value. Ignoring service-managed-ebs-volume property');
     }
   }  else {
-    core.debug(`No VolumeConfiguration Property provided for service-managed-ebs-volume`);
+    core.debug('No VolumeConfiguration Property provided for service-managed-ebs-volume');
   }
-  core.debug(`VolumeConfiguration Value: ${volumeConfiguration}`);
+  core.debug('VolumeConfiguration Value: ${volumeConfiguration}');
+  core.debug('VolumeConfiguration Value Set.');
 
 
   let params = {
