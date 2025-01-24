@@ -190,7 +190,7 @@ async function tasksExitCode(ecs, clusterName, taskArns) {
 
 // Deploy to a service that uses the 'ECS' deployment controller
 async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags) {
-  core.debug('Updating the service');
+  core.debug('Updating the provided ECS service');
 
   const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
   core.debug('serviceManagedEbsVolume Name: ${serviceManagedEbsVolumeName}');
