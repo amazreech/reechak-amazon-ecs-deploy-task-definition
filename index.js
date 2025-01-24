@@ -190,7 +190,7 @@ async function tasksExitCode(ecs, clusterName, taskArns) {
 
 // Deploy to a service that uses the 'ECS' deployment controller
 async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags) {
-  core.info('Updating the service');
+  core.warning('Updating the service');
 
   const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
   const serviceManagedEbsVolume = JSON.parse(core.getInput('service-managed-ebs-volume', { required: false }) || '{}');
@@ -198,16 +198,16 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
   let volumeConfiguration = {};
 
   if (serviceManagedEbsVolumeName != '') {
-    core.info(`Assigning VolumeConfiguration Name: ${serviceManagedEbsVolumeName}`);
+    core.warning(`Assigning VolumeConfiguration Name: ${serviceManagedEbsVolumeName}`);
     if (serviceManagedEbsVolume != '{}') {
       serviceManagedEbsVolumeObject = convertToManagedEbsVolumeObject(serviceManagedEbsVolume);
       volumeConfiguration[serviceManagedEbsVolumeName] = serviceManagedEbsVolumeObject;
-      core.info(`Assigning VolumeConfiguration Object`);
+      core.warning(`Assigning VolumeConfiguration Object`);
     } else {
       core.warning(`service-managed-ebs-volume-name provided without service-managed-ebs-volume value. Ignoring service-managed-ebs-volume property`);
     }
   }  else {
-    core.info(`No VolumeConfiguration Property provided for service-managed-ebs-volume`);
+    core.warning(`No VolumeConfiguration Property provided for service-managed-ebs-volume`);
   }
 
   let params = {
@@ -492,8 +492,8 @@ async function run() {
       registerResponse = await ecs.registerTaskDefinition(taskDefContents);
     } catch (error) {
       core.setFailed("Failed to register task definition in ECS: " + error.message);
-      core.info("Task definition contents:");
-      core.info(JSON.stringify(taskDefContents, undefined, 4));
+      core.warning("Task definition contents:");
+      core.warning(JSON.stringify(taskDefContents, undefined, 4));
       throw(error);
     }
     const taskDefArn = registerResponse.taskDefinition.taskDefinitionArn;
@@ -503,9 +503,9 @@ async function run() {
     const clusterName = cluster ? cluster : 'default';
     const shouldRunTaskInput = core.getInput('run-task', { required: false }) || 'false';
     const shouldRunTask = shouldRunTaskInput.toLowerCase() === 'true';
-    core.info(`shouldRunTask: ${shouldRunTask}`);
+    core.warning(`shouldRunTask: ${shouldRunTask}`);
     if (shouldRunTask) {
-      core.info("Running ad-hoc task...");
+      core.warning("Running ad-hoc task...");
       await runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSManagedTags);
     }
 
@@ -529,23 +529,23 @@ async function run() {
 
       if (!serviceResponse.deploymentController || !serviceResponse.deploymentController.type || serviceResponse.deploymentController.type === 'ECS') {
         // Service uses the 'ECS' deployment controller, so we can call UpdateService
-        core.info('Updating service...');
+        core.warning('Updating service...');
         await updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags);
 
       } else if (serviceResponse.deploymentController.type === 'CODE_DEPLOY') {
         // Service uses CodeDeploy, so we should start a CodeDeploy deployment
-        core.info('Deploying service in the default cluster');
+        core.warning('Deploying service in the default cluster');
         await createCodeDeployDeployment(codedeploy, clusterName, service, taskDefArn, waitForService, waitForMinutes);
       } else {
         throw new Error(`Unsupported deployment controller: ${serviceResponse.deploymentController.type}`);
       }
     } else {
-      core.info('Service was not specified, no service updated');
+      core.warning('Service was not specified, no service updated');
     }
   }
   catch (error) {
     core.setFailed(error.message);
-    core.info(error.stack);
+    core.warning(error.stack);
   }
 }
 
