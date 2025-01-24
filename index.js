@@ -33,8 +33,8 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
   const assignPublicIP = core.getInput('run-task-assign-public-IP', { required: false }) || 'DISABLED';
   const tags = JSON.parse(core.getInput('run-task-tags', { required: false }) || '[]');
   const capacityProviderStrategy = JSON.parse(core.getInput('run-task-capacity-provider-strategy', { required: false }) || '[]');
-  const runTaskManagedEBSVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
-  const runTaskManagedEBSVolume = core.getInput('service-managed-ebs-volume', { required: false }) || '{}';
+  const runTaskManagedEBSVolumeName = core.getInput('run-task-managed-ebs-volume', { required: false }) || '';
+  const runTaskManagedEBSVolume = core.getInput('run-task-managed-ebs-volume-name', { required: false }) || '{}';
 
   let awsvpcConfiguration = {}
 
@@ -57,7 +57,7 @@ async function runTask(ecs, clusterName, taskDefArn, waitForMinutes, enableECSMa
       taskManagedEBSVolumeObject = convertToManagedEbsVolumeObject(runTaskManagedEbsVolume);
       volumeConfiguration[runTaskManagedEbsVolumeName] = taskManagedEbsVolumeObject;
     } else {
-      core.warning(`managed-ebs-volume-name provided without managed-ebs-volume value. Ignoring managed-ebs-volume property`);
+      core.warning(`run-task-managed-ebs-volume-name provided without run-task-managed-ebs-volume value. Ignoring run-task-managed-ebs-volume property`);
     }
   }
 
@@ -190,8 +190,8 @@ async function tasksExitCode(ecs, clusterName, taskArns) {
 async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForService, waitForMinutes, forceNewDeployment, desiredCount, enableECSManagedTags, propagateTags) {
   core.debug('Updating the service');
 
-  const serviceManagedEbsVolumeName = core.getInput('managed-ebs-volume-name', { required: false }) || '';
-  const serviceManagedEbsVolume = JSON.parse(core.getInput('managed-ebs-volume', { required: false }) || '{}');
+  const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
+  const serviceManagedEbsVolume = JSON.parse(core.getInput('service-managed-ebs-volume', { required: false }) || '{}');
 
   let volumeConfiguration = {};
 
@@ -201,7 +201,7 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
       volumeConfiguration[serviceManagedEbsVolumeName] = serviceManagedEbsVolumeObject;
       core.info(`Assigning VolumeConfiguration Object`);
     } else {
-      core.warning(`managed-ebs-volume-name provided without managed-ebs-volume value. Ignoring managed-ebs-volume property`);
+      core.warning(`service-managed-ebs-volume-name provided without service-managed-ebs-volume value. Ignoring service-managed-ebs-volume property`);
     }
   }
 
