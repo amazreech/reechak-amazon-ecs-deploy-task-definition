@@ -193,7 +193,9 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
   core.debug('Updating the service');
 
   const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
+  core.debug(`serviceManagedEbsVolume Name: ${serviceManagedEbsVolumeName}`);
   const serviceManagedEbsVolume = JSON.parse(core.getInput('service-managed-ebs-volume', { required: false }) || '{}');
+  core.debug(`serviceManagedEbsVolume Value: ${serviceManagedEbsVolume}`);
 
   let volumeConfiguration = {};
 
@@ -209,6 +211,8 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
   }  else {
     core.debug(`No VolumeConfiguration Property provided for service-managed-ebs-volume`);
   }
+  core.debug(`VolumeConfiguration Value: ${volumeConfiguration}`);
+
 
   let params = {
     cluster: clusterName,
