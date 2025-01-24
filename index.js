@@ -195,7 +195,7 @@ async function updateEcsService(ecs, clusterName, service, taskDefArn, waitForSe
   const serviceManagedEbsVolumeName = core.getInput('service-managed-ebs-volume-name', { required: false }) || '';
   core.debug('serviceManagedEbsVolume Name: ${serviceManagedEbsVolumeName}');
   core.debug('serviceManagedEbsVolume Name.');
-  const serviceManagedEbsVolume = JSON.parse(core.getInput('service-managed-ebs-volume', { required: false }) || '{}');
+  const serviceManagedEbsVolume = core.getInput('service-managed-ebs-volume', { required: false }) || '{}';
   core.debug('serviceManagedEbsVolume Value: ${serviceManagedEbsVolume}');
   core.debug('serviceManagedEbsVolume Value.');
 
